@@ -38,7 +38,8 @@ public class KDTree<T> {
         int[] query = { x, y };
         long md = maxDistance;
         nearest.distance = md * md;
-        return root.findNearest(query, nearest, 0).p;
+        root.findNearest(query, nearest, 0);
+        return nearest.p;
     }
 
     @Override
@@ -97,13 +98,15 @@ public class KDTree<T> {
             return "x " + coor[0] + " y " + coor[1];
         }
 
-        private NearestPoint<T> findNearest(int[] query, NearestPoint<T> currentBest, int axis) {
+        private boolean findNearest(int[] query, NearestPoint<T> currentBest, int axis) {
+            boolean bestPointImproved = false;
+            int nextAxis = (axis + 1) & 1;
             // Negative number means this point is on the left to the query point.
             int diff = query[axis] - this.coor[axis];
             // First check the closer side
             if (diff >= 0) {
                 if (bigger != null) {
-                    bigger.findNearest(query, currentBest, (axis + 1) % 2);
+                    bigger.findNearest(query, currentBest, nextAxis);
                 }
                 // Now let's see it the other side is still relevant.
                 long distanceToHyperplane = diff * diff;
@@ -116,12 +119,12 @@ public class KDTree<T> {
                         currentBest.distance = d;
                     }
                     if (smaller != null) {
-                        smaller.findNearest(query, currentBest, (axis + 1) % 2);
+                        smaller.findNearest(query, currentBest, nextAxis);
                     }
                 }
             } else {
                 if (smaller != null) {
-                    smaller.findNearest(query, currentBest, (axis + 1) % 2);
+                    smaller.findNearest(query, currentBest, nextAxis);
                 }
                 // Now let's see it the other side is still relevant.
                 long distanceToHyperplane = diff * diff;
@@ -134,11 +137,11 @@ public class KDTree<T> {
                         currentBest.distance = d;
                     }
                     if (bigger != null) {
-                        bigger.findNearest(query, currentBest, (axis + 1) % 2);
+                        bigger.findNearest(query, currentBest, nextAxis);
                     }
                 }
             }
-            return currentBest;
+            return bestPointImproved;
         }
     }
 }
