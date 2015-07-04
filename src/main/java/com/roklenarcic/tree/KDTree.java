@@ -6,9 +6,9 @@ import java.util.List;
 
 public class KDTree<T> {
 
-    private static long distance(Point<?> p, int[] query) {
-        long dx = p.coor[0] - query[0];
-        long dy = p.coor[1] - query[1];
+    private static long distance(int x1, int y1, int x2, int y2) {
+        long dx = x1 - x2;
+        long dy = y1 - y2;
         return dx * dx + dy * dy;
     }
 
@@ -16,13 +16,13 @@ public class KDTree<T> {
     private final Comparator<Point<T>>[] comparators = (Comparator<Point<T>>[]) new Comparator<?>[] { new Comparator<KDTree.Point<T>>() {
 
         public int compare(Point<T> o1, Point<T> o2) {
-            return o1.coor[0] - o2.coor[0];
+            return o1.axisValue - o2.axisValue;
         }
 
     }, new Comparator<KDTree.Point<T>>() {
 
         public int compare(Point<T> o1, Point<T> o2) {
-            return o1.coor[1] - o2.coor[1];
+            return o1.otherValue - o2.otherValue;
         }
 
     } };
@@ -31,14 +31,14 @@ public class KDTree<T> {
 
     public KDTree(List<Point<T>> points) {
         root = buildSubtree(points, 0);
+        root.skipFlip();
     }
 
     public Point<T> findNearest(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
-        int[] query = { x, y };
         long md = maxDistance;
         nearest.distance = md * md;
-        root.findNearest(query, nearest, 0);
+        root.findNearest(x, y, nearest);
         return nearest.p;
     }
 
@@ -56,9 +56,9 @@ public class KDTree<T> {
         Collections.sort(points, comparators[axis]);
         int pivotIdx = points.size() / 2;
         {
-            int pivotValue = points.get(pivotIdx).coor[axis];
+            int pivotValue = axis == 0 ? points.get(pivotIdx).axisValue : points.get(pivotIdx).otherValue;
             while (--pivotIdx > 0) {
-                if (points.get(pivotIdx).coor[axis] != pivotValue) {
+                if ((axis == 0 ? points.get(pivotIdx).axisValue : points.get(pivotIdx).otherValue) != pivotValue) {
                     pivotIdx++;
                     break;
                 }
@@ -71,77 +71,95 @@ public class KDTree<T> {
         return p;
     }
 
-    public static class NearestPoint<T> {
-
-        long distance;
-        Point<T> p;
-
-    }
-
     public static class Point<T> {
 
-        Point<T> bigger;
+        int axisValue;
+        int otherValue;
 
-        int[] coor;
+        Point<T> smaller, bigger;
 
-        Point<T> smaller;
         T value;
 
-        public Point(int[] coor, T value) {
+        public Point(int x, int y, T value) {
             super();
-            this.coor = coor;
+            this.axisValue = x;
+            this.otherValue = y;
             this.value = value;
         }
 
         @Override
         public String toString() {
-            return "x " + coor[0] + " y " + coor[1];
+            return "Axis " + axisValue + " other " + otherValue;
         }
 
-        private boolean findNearest(int[] query, NearestPoint<T> currentBest, int axis) {
-            boolean bestPointImproved = false;
-            int nextAxis = (axis + 1) & 1;
+        private void findNearest(int queryAxis, int queryOther, NearestPoint<T> currentBest) {
             // Negative number means this point is on the left to the query point.
-            int diff = query[axis] - this.coor[axis];
+            int diff = queryAxis - axisValue;
             // First check the closer side
             if (diff >= 0) {
                 if (bigger != null) {
-                    bigger.findNearest(query, currentBest, nextAxis);
+                    bigger.findNearest(queryOther, queryAxis, currentBest);
                 }
                 // Now let's see it the other side is still relevant.
                 long distanceToHyperplane = diff * diff;
                 // See if line intersects circle
                 if (distanceToHyperplane <= currentBest.distance) {
                     // If it does then this point might be the best one
-                    long d = KDTree.distance(this, query);
+                    long d = KDTree.distance(queryAxis, queryOther, axisValue, otherValue);
                     if (d < currentBest.distance) {
                         currentBest.p = this;
                         currentBest.distance = d;
                     }
                     if (smaller != null) {
-                        smaller.findNearest(query, currentBest, nextAxis);
+                        smaller.findNearest(queryOther, queryAxis, currentBest);
                     }
                 }
             } else {
                 if (smaller != null) {
-                    smaller.findNearest(query, currentBest, nextAxis);
+                    smaller.findNearest(queryOther, queryAxis, currentBest);
                 }
                 // Now let's see it the other side is still relevant.
                 long distanceToHyperplane = diff * diff;
                 // See if line intersects circle
                 if (distanceToHyperplane <= currentBest.distance) {
                     // If it does then this point might be the best one
-                    long d = KDTree.distance(this, query);
+                    long d = KDTree.distance(queryAxis, queryOther, axisValue, otherValue);
                     if (d < currentBest.distance) {
                         currentBest.p = this;
                         currentBest.distance = d;
                     }
                     if (bigger != null) {
-                        bigger.findNearest(query, currentBest, nextAxis);
+                        bigger.findNearest(queryOther, queryAxis, currentBest);
                     }
                 }
             }
-            return bestPointImproved;
         }
+
+        private void flip() {
+            int temp = axisValue;
+            axisValue = otherValue;
+            otherValue = temp;
+            if (smaller != null) {
+                smaller.skipFlip();
+            }
+            if (bigger != null) {
+                bigger.skipFlip();
+            }
+        }
+
+        private void skipFlip() {
+            if (smaller != null) {
+                smaller.flip();
+            }
+            if (bigger != null) {
+                bigger.flip();
+            }
+        }
+
+    }
+
+    private static class NearestPoint<T> {
+        long distance;
+        Point<T> p;
     }
 }
