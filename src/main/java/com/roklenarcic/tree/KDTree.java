@@ -27,15 +27,19 @@ public class KDTree<T> {
     // Point coordinates are limited to [-10^9...10^9]
     public KDTree(List<Point<T>> points) {
         root = buildTree(points, 0);
-        // After building the tree, correctly order x and y into axisValue, otherValue
-        root.skipFlip();
+        if (root != null) {
+            // After building the tree, correctly order x and y into axisValue, otherValue
+            root.skipFlip();
+        }
     }
 
     public Point<T> findNearest(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
-        long md = maxDistance;
-        nearest.distance = md * md;
-        root.findNearest(x, y, nearest);
+        if (root != null) {
+            long md = maxDistance + 1;
+            nearest.distance = md * md;
+            root.findNearest(x, y, nearest);
+        }
         return nearest.p;
     }
 
