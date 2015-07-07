@@ -10,13 +10,13 @@ public class KDTree<T> {
     private final Comparator<Point<T>>[] comparators = (Comparator<Point<T>>[]) new Comparator<?>[] { new Comparator<KDTree.Point<T>>() {
 
         public int compare(Point<T> o1, Point<T> o2) {
-            return o1.axisValue - o2.axisValue;
+            return o1.x - o2.x;
         }
 
     }, new Comparator<KDTree.Point<T>>() {
 
         public int compare(Point<T> o1, Point<T> o2) {
-            return o1.otherValue - o2.otherValue;
+            return o1.y - o2.y;
         }
 
     } };
@@ -36,6 +36,8 @@ public class KDTree<T> {
     public Point<T> findNearest(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
+            // Add one to maxDistance as we want points that are exactly max distance
+            // away to still be elegible.
             long md = maxDistance + 1;
             nearest.distance = md * md;
             root.findNearest(x, y, nearest);
@@ -53,28 +55,28 @@ public class KDTree<T> {
             return p;
         } else if (points.size() == 0) {
             return null;
-        }
-        // Sort by axis.
-        Collections.sort(points, comparators[axis]);
-        int pivotIdx = points.size() >> 1;
-        {
-            int pivotValue = axis == 0 ? points.get(pivotIdx).axisValue : points.get(pivotIdx).otherValue;
+        } else {
+            // Sort by axis.
+            Collections.sort(points, comparators[axis]);
+            int pivotIdx = points.size() >> 1;
+            int pivotValue = points.get(pivotIdx).getCoordinate(axis);
+            // Find first point with the same axis value.
             while (--pivotIdx > 0) {
-                if ((axis == 0 ? points.get(pivotIdx).axisValue : points.get(pivotIdx).otherValue) != pivotValue) {
+                if (points.get(pivotIdx).getCoordinate(axis) != pivotValue) {
                     pivotIdx++;
                     break;
                 }
             }
+            Point<T> p = points.get(pivotIdx);
+            if (p.x > 1000000000 || p.x < -1000000000 || p.y > 1000000000 || p.y < -1000000000) {
+                throw new IllegalArgumentException("Point " + p + " has coordinates out of [-10^9...10^9] interval.");
+            }
+            axis = axis ^ 1;
+            // Build subtree. Bigger branch also contains points that has equal axis value to the pivot.
+            p.smaller = buildTree(points.subList(0, pivotIdx), axis);
+            p.bigger = buildTree(points.subList(pivotIdx + 1, points.size()), axis);
+            return p;
         }
-        axis = axis ^ 1;
-        Point<T> p = points.get(pivotIdx);
-        if (p.x > 1000000000 || p.x < -1000000000 || p.y > 1000000000 || p.y < -1000000000) {
-            throw new IllegalArgumentException("Point " + p + " has coordinates out of [-10^9...10^9] interval.");
-        }
-        // Build subtree. Bigger branch also contains points that has equal axis value to the pivot.
-        p.smaller = buildTree(points.subList(0, pivotIdx), axis);
-        p.bigger = buildTree(points.subList(pivotIdx + 1, points.size()), axis);
-        return p;
     }
 
     public static class Point<T> {
@@ -179,6 +181,10 @@ public class KDTree<T> {
             if (bigger != null) {
                 bigger.skipFlip();
             }
+        }
+
+        private int getCoordinate(int axis) {
+            return axis == 0 ? x : y;
         }
 
         private void skipFlip() {
