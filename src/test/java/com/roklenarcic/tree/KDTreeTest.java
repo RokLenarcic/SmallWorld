@@ -38,9 +38,9 @@ public class KDTreeTest {
     @Test
     public void testSmallMaxDistance() {
         List<Point<Void>> datasetPoints = generateRandomPoints(300, 100000);
-        List<Point<Void>> checkPoints = generateRandomPoints(10, 100000);
         KDTree<Void> k = new KDTree<Void>(datasetPoints);
-        for (Point<Void> p : checkPoints) {
+        for (Point<Void> p : datasetPoints) {
+            Assert.assertTrue("Point " + p + "doesn't resolve to itself", k.findNearest(p.getX(), p.getY(), 0) == p);
             confirm(p.getX(), p.getY(), k.findNearest(p.getX(), p.getY(), 0), datasetPoints, 0);
         }
     }

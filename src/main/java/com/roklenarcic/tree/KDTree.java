@@ -61,7 +61,7 @@ public class KDTree<T> {
             int pivotIdx = points.size() >> 1;
             int pivotValue = points.get(pivotIdx).getCoordinate(axis);
             // Find first point with the same axis value.
-            while (--pivotIdx > 0) {
+            while (--pivotIdx >= 0) {
                 if (points.get(pivotIdx).getCoordinate(axis) != pivotValue) {
                     pivotIdx++;
                     break;
