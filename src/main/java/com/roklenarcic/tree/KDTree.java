@@ -36,11 +36,36 @@ public class KDTree<T> {
     public Point<T> findNearest(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
-            // Add one to maxDistance as we want points that are exactly max distance
-            // away to still be elegible.
-            long md = maxDistance + 1;
+            long md = maxDistance;
             nearest.distance = md * md;
             root.findNearest(x, y, nearest);
+        }
+        return nearest.p;
+    }
+
+    // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
+    // coordinates are valid.
+    public Point<T> findNearest(int x, int y, int maxDistance, int wrapLeft, int wrapRight) {
+        NearestPoint<T> nearest = new NearestPoint<T>();
+        if (root != null) {
+            long md = maxDistance;
+            nearest.distance = md * md;
+            root.findNearest(x, y, nearest);
+            if (nearest.distance > 0) {
+                // No point found within max distance, see if point + max distance crosses the wrap
+                // It can only wrap around the nearest border.
+                if (wrapLeft + wrapRight > x << 1) {
+                    long distanceToLeftBorder = x - wrapLeft;
+                    if (distanceToLeftBorder * distanceToLeftBorder < nearest.distance) {
+                        root.findNearest(wrapRight + distanceToLeftBorder + 1, y, nearest);
+                    }
+                } else {
+                    long distanceToRightBorder = wrapRight - x;
+                    if (distanceToRightBorder * distanceToRightBorder < nearest.distance) {
+                        root.findNearest(wrapLeft - distanceToRightBorder - 1, y, nearest);
+                    }
+                }
+            }
         }
         return nearest.p;
     }
@@ -61,12 +86,9 @@ public class KDTree<T> {
             int pivotIdx = points.size() >> 1;
             int pivotValue = points.get(pivotIdx).getCoordinate(axis);
             // Find first point with the same axis value.
-            while (--pivotIdx >= 0) {
-                if (points.get(pivotIdx).getCoordinate(axis) != pivotValue) {
-                    pivotIdx++;
-                    break;
-                }
+            while (--pivotIdx >= 0 && points.get(pivotIdx).getCoordinate(axis) == pivotValue) {
             }
+            pivotIdx++;
             Point<T> p = points.get(pivotIdx);
             if (p.x > 1000000000 || p.x < -1000000000 || p.y > 1000000000 || p.y < -1000000000) {
                 throw new IllegalArgumentException("Point " + p + " has coordinates out of [-10^9...10^9] interval.");
@@ -135,7 +157,7 @@ public class KDTree<T> {
                     // If it does then this point might be the best one.
                     long diffOther = queryOther - otherValue;
                     long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d < currentBest.distance) {
+                    if (d <= currentBest.distance) {
                         currentBest.p = this;
                         currentBest.distance = d;
                     }
@@ -159,7 +181,7 @@ public class KDTree<T> {
                     // If it does then this point might be the best one.
                     long diffOther = queryOther - otherValue;
                     long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d < currentBest.distance) {
+                    if (d <= currentBest.distance) {
                         currentBest.p = this;
                         currentBest.distance = d;
                     }
