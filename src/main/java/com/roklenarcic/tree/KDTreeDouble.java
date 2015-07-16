@@ -6,7 +6,7 @@ import java.util.List;
 
 public class KDTreeDouble<T> {
 
-    private static final double MAX_COORD_VAL = Math.sqrt(Double.MAX_VALUE);
+    private static final double MAX_COORD_VAL = (Math.sqrt(Double.MAX_VALUE) / 1.81) / 2;
 
     @SuppressWarnings("unchecked")
     private final Comparator<Point<T>>[] comparators = (Comparator<Point<T>>[]) new Comparator<?>[] { new Comparator<KDTreeDouble.Point<T>>() {
@@ -38,14 +38,28 @@ public class KDTreeDouble<T> {
     } };
 
     private final Point<T> root;
+    private final double xMax;
+    private final double xMin;
+    private final double yMax;
+    private final double yMin;
 
     // Build a tree from list of points.
-    // Point coordinates are limited to [-10^9...10^9]
-    public KDTreeDouble(List<Point<T>> points) {
-        root = buildTree(points, 0);
-        if (root != null) {
-            // After building the tree, correctly order x and y into axisValue, otherValue
-            root.skipFlip();
+    public KDTreeDouble(List<Point<T>> points, double xMin, double yMin, double xMax, double yMax) {
+        if (xMin < xMax && yMin < yMax) {
+            this.xMin = xMin;
+            this.yMin = yMin;
+            this.xMax = xMax;
+            this.yMax = yMax;
+            if (xMax > MAX_COORD_VAL || xMin < -MAX_COORD_VAL || yMax > MAX_COORD_VAL || yMin < -MAX_COORD_VAL) {
+                throw new IllegalArgumentException("Area limits too big, out of [-3.7E153...3.7E153] interval.");
+            }
+            root = buildTree(points, 0);
+            if (root != null) {
+                // After building the tree, correctly order x and y into axisValue, otherValue
+                root.skipFlip();
+            }
+        } else {
+            throw new IllegalArgumentException("Area limits are not correctly ordered: " + xMin + " < " + xMax + " " + yMin + " < " + yMax);
         }
     }
 
@@ -61,7 +75,7 @@ public class KDTreeDouble<T> {
 
     // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
     // coordinates are valid.
-    public Point<T> findNearest(double x, double y, double maxDistance, double wrapLeft, double wrapRight) {
+    public Point<T> findNearestWithWrapping(double x, double y, double maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
             double md = maxDistance;
@@ -70,15 +84,15 @@ public class KDTreeDouble<T> {
             if (nearest.distance > 0) {
                 // No point found within max distance, see if point + max distance crosses the wrap
                 // It can only wrap around the nearest border.
-                if (wrapLeft + wrapRight > x / 2) {
-                    double distanceToLeftBorder = x - wrapLeft;
+                if (xMin + xMax > x / 2) {
+                    double distanceToLeftBorder = x - xMin;
                     if (distanceToLeftBorder * distanceToLeftBorder < nearest.distance) {
-                        root.findNearest(wrapRight + distanceToLeftBorder + 1, y, nearest);
+                        root.findNearest(xMax + distanceToLeftBorder + 1, y, nearest);
                     }
                 } else {
-                    double distanceToRightBorder = wrapRight - x;
+                    double distanceToRightBorder = xMax - x;
                     if (distanceToRightBorder * distanceToRightBorder < nearest.distance) {
-                        root.findNearest(wrapLeft - distanceToRightBorder - 1, y, nearest);
+                        root.findNearest(xMin - distanceToRightBorder - 1, y, nearest);
                     }
                 }
             }
@@ -88,10 +102,9 @@ public class KDTreeDouble<T> {
 
     private Point<T> buildTree(List<Point<T>> points, int axis) {
         if (points.size() == 1) {
-            // Point coordinates are limited to [-10^9...10^9]
             Point<T> p = points.get(0);
-            if (p.x > MAX_COORD_VAL || p.x < -MAX_COORD_VAL || p.y > MAX_COORD_VAL || p.y < -MAX_COORD_VAL) {
-                throw new IllegalArgumentException("Point " + p + " has coordinates out of [-" + MAX_COORD_VAL + "..." + MAX_COORD_VAL + "] interval.");
+            if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
+                throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
             return p;
         } else if (points.size() == 0) {
@@ -106,8 +119,8 @@ public class KDTreeDouble<T> {
             }
             pivotIdx++;
             Point<T> p = points.get(pivotIdx);
-            if (p.x > MAX_COORD_VAL || p.x < -MAX_COORD_VAL || p.y > MAX_COORD_VAL || p.y < -MAX_COORD_VAL) {
-                throw new IllegalArgumentException("Point " + p + " has coordinates out of [-" + MAX_COORD_VAL + "..." + MAX_COORD_VAL + "] interval.");
+            if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
+                throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
             axis = axis ^ 1;
             // Build subtree. Bigger branch also contains points that has equal axis value to the pivot.

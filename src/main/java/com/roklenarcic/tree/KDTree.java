@@ -22,18 +22,28 @@ public class KDTree<T> {
     } };
 
     private final Point<T> root;
-    private final Integer wrapLeft;
-    private final Integer wrapRight;
+    private final int xMax;
+    private final int xMin;
+    private final int yMax;
+    private final int yMin;
 
     // Build a tree from list of points.
-    // Point coordinates are limited to [-10^9...10^9]
-    public KDTree(List<Point<T>> points) {
-        wrapLeft = null;
-        wrapRight = null;
-        root = buildTree(points, 0);
-        if (root != null) {
-            // After building the tree, correctly order x and y into axisValue, otherValue
-            root.skipFlip();
+    public KDTree(List<Point<T>> points, int xMin, int yMin, int xMax, int yMax) {
+        if (xMin < xMax && yMin < yMax) {
+            this.xMin = xMin;
+            this.yMin = yMin;
+            this.xMax = xMax;
+            this.yMax = yMax;
+            if (xMax > 590000000 || xMin < -590000000 || yMax > 590000000 || yMin < -590000000) {
+                throw new IllegalArgumentException("Area limits too big, out of [-590M...590M] interval.");
+            }
+            root = buildTree(points, 0);
+            if (root != null) {
+                // After building the tree, correctly order x and y into axisValue, otherValue
+                root.skipFlip();
+            }
+        } else {
+            throw new IllegalArgumentException("Area limits are not correctly ordered: " + xMin + " < " + xMax + " " + yMin + " < " + yMax);
         }
     }
 
@@ -43,28 +53,13 @@ public class KDTree<T> {
             long md = maxDistance;
             nearest.distance = md * md;
             root.findNearest(x, y, nearest);
-            if (wrapLeft != null && nearest.distance > 0) {
-                // No point found within max distance, see if point + max distance crosses the wrap
-                // It can only wrap around the nearest border.
-                if (wrapLeft + wrapRight > x << 1) {
-                    long distanceToLeftBorder = x - wrapLeft;
-                    if (distanceToLeftBorder * distanceToLeftBorder < nearest.distance) {
-                        root.findNearest(wrapRight + distanceToLeftBorder + 1, y, nearest);
-                    }
-                } else {
-                    long distanceToRightBorder = wrapRight - x;
-                    if (distanceToRightBorder * distanceToRightBorder < nearest.distance) {
-                        root.findNearest(wrapLeft - distanceToRightBorder - 1, y, nearest);
-                    }
-                }
-            }
         }
         return nearest.p;
     }
 
     // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
     // coordinates are valid.
-    public Point<T> findNearest(int x, int y, int maxDistance, int wrapLeft, int wrapRight) {
+    public Point<T> findNearestWithWrapping(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
             long md = maxDistance;
@@ -73,15 +68,15 @@ public class KDTree<T> {
             if (nearest.distance > 0) {
                 // No point found within max distance, see if point + max distance crosses the wrap
                 // It can only wrap around the nearest border.
-                if (wrapLeft + wrapRight > x << 1) {
-                    long distanceToLeftBorder = x - wrapLeft;
+                if (xMin + xMax > x << 1) {
+                    long distanceToLeftBorder = x - xMin;
                     if (distanceToLeftBorder * distanceToLeftBorder < nearest.distance) {
-                        root.findNearest(wrapRight + distanceToLeftBorder + 1, y, nearest);
+                        root.findNearest(xMax + distanceToLeftBorder + 1, y, nearest);
                     }
                 } else {
-                    long distanceToRightBorder = wrapRight - x;
+                    long distanceToRightBorder = xMax - x;
                     if (distanceToRightBorder * distanceToRightBorder < nearest.distance) {
-                        root.findNearest(wrapLeft - distanceToRightBorder - 1, y, nearest);
+                        root.findNearest(xMin - distanceToRightBorder - 1, y, nearest);
                     }
                 }
             }
@@ -93,8 +88,8 @@ public class KDTree<T> {
         if (points.size() == 1) {
             // Point coordinates are limited to [-10^9...10^9]
             Point<T> p = points.get(0);
-            if (p.x > 1000000000 || p.x < -1000000000 || p.y > 1000000000 || p.y < -1000000000) {
-                throw new IllegalArgumentException("Point " + p + " has coordinates out of [-10^9...10^9] interval.");
+            if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
+                throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
             return p;
         } else if (points.size() == 0) {
@@ -109,8 +104,8 @@ public class KDTree<T> {
             }
             pivotIdx++;
             Point<T> p = points.get(pivotIdx);
-            if (p.x > 1000000000 || p.x < -1000000000 || p.y > 1000000000 || p.y < -1000000000) {
-                throw new IllegalArgumentException("Point " + p + " has coordinates out of [-10^9...10^9] interval.");
+            if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
+                throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
             axis = axis ^ 1;
             // Build subtree. Bigger branch also contains points that has equal axis value to the pivot.
