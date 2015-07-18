@@ -7,20 +7,20 @@ Java 5 compatible.
 ## Sample use
 
 ```
-import com.roklenarcic.tree.KDTree
-import com.roklenarcic.tree.KDTree.Point
+import com.roklenarcic.tree.KDTreeInt
+import com.roklenarcic.tree.KDTreeInt.Point
 
 List<Point<MyData>> points = ...construct data set
 // Parameters are points, minimum X coord, minimum Y coord, maximum X coord, maximum Y coord, all inclusive.
-KDTree<MyData> tree = new KDTree<MyData>(points, -180, -90, 180, 90);
+KDTreeInt<MyData> tree = new KDTreeInt<MyData>(points, -180, -90, 180, 90);
 Point<MyData> closestPoint = tree.findNearest(4, 5, Integer.MAX_VALUE);
 // Find nearest point with X axis wrapping.
-Point<MyData> closestPointWithWrapping = tree.findNearestWithWrapping(4, 5, Integer.MAX_VALUE, -180, 180);
+Point<MyData> closestPointWithWrapping = tree.findNearestWithWrapping(4, 5, Integer.MAX_VALUE);
 ```
 
-## KDTree and KDTreeDouble
+## KDTreeInt and KDTreeDouble
 
-There's two flavors of tree offered. `KDTree` with `int` coordinates and `KDTreeDouble` with `double` coordinates.
+There's two flavors of tree offered. `KDTreeInt` with `int` coordinates and `KDTreeDouble` with `double` coordinates.
 
 Geographical data usually has coordinates in double format, but arguably you never need more than 5 decimals.
 So one can easily use the `int` tree by simply multiplying and truncating:
@@ -40,6 +40,13 @@ e.g. `(10.00000000000000001 - 10.00000000000000002) ^ 2 = 0.0000000000000000000.
 
 It might also be slower on platforms with slow floating point operations.
 
+## KDTreeSpherical
+
+This variant uses a 3-D tree which models the world as a sphere. This solves problems with wrapping in 2 dimensions and with distance distortion, which is present in 2-D trees.
+
+But it is slower by about 50%. The azimuth value should be between [-180,180] and inclination should be [-90,90].
+
 ## How fast is this?
 
-Fast enough. Micro benchmark with 40k random points shows it needs 500-700 nanoseconds per lookup.
+Fast enough. Single-threaded micro benchmark on Core i5 with 40k random points shows that 2-D trees need 500-700 nanoseconds per lookup, 15% slower if using wrapping.
+3-D spherical tree needs 1100-1300 nanoseconds per lookup.

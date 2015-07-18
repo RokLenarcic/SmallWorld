@@ -4,22 +4,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-public class KDTree<T> {
+public class KDTreeInt<T> {
 
     @SuppressWarnings("unchecked")
-    private final Comparator<Point<T>>[] comparators = (Comparator<Point<T>>[]) new Comparator<?>[] { new Comparator<KDTree.Point<T>>() {
-
-        public int compare(Point<T> o1, Point<T> o2) {
-            return o1.x - o2.x;
-        }
-
-    }, new Comparator<KDTree.Point<T>>() {
-
-        public int compare(Point<T> o1, Point<T> o2) {
-            return o1.y - o2.y;
-        }
-
-    } };
+    private final Comparator<Point<?>>[] comparators = (Comparator<Point<?>>[]) new Comparator<?>[] { Point.createComparator(0), Point.createComparator(1) };
 
     private final Point<T> root;
     private final int xMax;
@@ -28,7 +16,7 @@ public class KDTree<T> {
     private final int yMin;
 
     // Build a tree from list of points.
-    public KDTree(List<Point<T>> points, int xMin, int yMin, int xMax, int yMax) {
+    public KDTreeInt(List<Point<T>> points, int xMin, int yMin, int xMax, int yMax) {
         if (xMin < xMax && yMin < yMax) {
             this.xMin = xMin;
             this.yMin = yMin;
@@ -38,10 +26,6 @@ public class KDTree<T> {
                 throw new IllegalArgumentException("Area limits too big, out of [-590M...590M] interval.");
             }
             root = buildTree(points, 0);
-            if (root != null) {
-                // After building the tree, correctly order x and y into axisValue, otherValue
-                root.skipFlip();
-            }
         } else {
             throw new IllegalArgumentException("Area limits are not correctly ordered: " + xMin + " < " + xMax + " " + yMin + " < " + yMax);
         }
@@ -88,6 +72,7 @@ public class KDTree<T> {
         if (points.size() == 1) {
             // Point coordinates are limited to [-10^9...10^9]
             Point<T> p = points.get(0);
+            p.rotate(axis);
             if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
                 throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
@@ -104,6 +89,7 @@ public class KDTree<T> {
             }
             pivotIdx++;
             Point<T> p = points.get(pivotIdx);
+            p.rotate(axis);
             if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
                 throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
             }
@@ -117,10 +103,19 @@ public class KDTree<T> {
 
     public static class Point<T> {
 
+        private static Comparator<Point<?>> createComparator(final int axis) {
+            return new Comparator<KDTreeInt.Point<?>>() {
+                public int compare(Point<?> o1, Point<?> o2) {
+                    return axis == 0 ? o1.x - o2.x : o1.y - o2.y;
+                }
+            };
+        }
+
         // Axis value other value contain x and y, but in such order
         // that the value that is used as axis for this point is in axisValue variable.
         private int axisValue;
         private int otherValue;
+
         private Point<T> smaller, bigger;
 
         private final T value;
@@ -207,28 +202,15 @@ public class KDTree<T> {
             }
         }
 
-        private void flip() {
-            int temp = axisValue;
-            axisValue = otherValue;
-            otherValue = temp;
-            if (smaller != null) {
-                smaller.skipFlip();
-            }
-            if (bigger != null) {
-                bigger.skipFlip();
-            }
-        }
-
         private int getCoordinate(int axis) {
             return axis == 0 ? x : y;
         }
 
-        private void skipFlip() {
-            if (smaller != null) {
-                smaller.flip();
-            }
-            if (bigger != null) {
-                bigger.flip();
+        private void rotate(int axis) {
+            if (axis == 1) {
+                int temp = axisValue;
+                axisValue = otherValue;
+                otherValue = temp;
             }
         }
 

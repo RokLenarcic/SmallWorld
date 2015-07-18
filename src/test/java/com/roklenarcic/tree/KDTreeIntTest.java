@@ -8,13 +8,13 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.roklenarcic.tree.KDTree.Point;
+import com.roklenarcic.tree.KDTreeInt.Point;
 
-public class KDTreeTest {
+public class KDTreeIntTest {
 
     @Test
     public void speedTestRandom() {
-        KDTree<Void> k = new KDTree<Void>(generateRandomPoints(40000, 1000000), 0, 0, 1000000, 1000000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(generateRandomPoints(40000, 1000000), 0, 0, 1000000, 1000000);
         List<Point<Void>> checkPoints = generateRandomPoints(1000, 1000000);
         long start = System.nanoTime();
         long sum = 0;
@@ -28,7 +28,7 @@ public class KDTreeTest {
 
     @Test
     public void speedTestRandomWrapping() {
-        KDTree<Void> k = new KDTree<Void>(generateRandomPoints(40000, 1000000), 0, 0, 1000000, 1000000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(generateRandomPoints(40000, 1000000), 0, 0, 1000000, 1000000);
         List<Point<Void>> checkPoints = generateRandomPoints(1000, 1000000);
         long start = System.nanoTime();
         long sum = 0;
@@ -44,7 +44,7 @@ public class KDTreeTest {
     public void testRandom() {
         List<Point<Void>> datasetPoints = generateRandomPoints(300, 100000);
         List<Point<Void>> checkPoints = generateRandomPoints(10000, 100000);
-        KDTree<Void> k = new KDTree<Void>(datasetPoints, 0, 0, 100000, 100000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(datasetPoints, 0, 0, 100000, 100000);
         for (Point<Void> p : checkPoints) {
             confirm(p.getX(), p.getY(), k.findNearest(p.getX(), p.getY(), Integer.MAX_VALUE), datasetPoints, Integer.MAX_VALUE);
         }
@@ -53,7 +53,7 @@ public class KDTreeTest {
     @Test
     public void testSmallMaxDistance() {
         List<Point<Void>> datasetPoints = generateRandomPoints(300, 100000);
-        KDTree<Void> k = new KDTree<Void>(datasetPoints, 0, 0, 100000, 100000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(datasetPoints, 0, 0, 100000, 100000);
         for (Point<Void> p : datasetPoints) {
             Assert.assertTrue("Point " + p + "doesn't resolve to itself", k.findNearest(p.getX(), p.getY(), 0) == p);
             confirm(p.getX(), p.getY(), k.findNearest(p.getX(), p.getY(), 0), datasetPoints, 0);
@@ -63,7 +63,7 @@ public class KDTreeTest {
     @Test
     public void testWrapping() {
         List<Point<Void>> datasetPoints = Collections.singletonList(new Point<Void>(1000000, 0, null));
-        KDTree<Void> k = new KDTree<Void>(datasetPoints, 0, 0, 1000000, 1000000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(datasetPoints, 0, 0, 1000000, 1000000);
         Point<Void> p = k.findNearestWithWrapping(1, 0, 2);
         Assert.assertEquals(1000000, p.getX());
         p = k.findNearestWithWrapping(1, 0, 1);
@@ -88,7 +88,7 @@ public class KDTreeTest {
 
     private List<Point<Void>> generateRandomPoints(int number, int range) {
         Random r = new Random();
-        List<Point<Void>> l = new ArrayList<KDTree.Point<Void>>();
+        List<Point<Void>> l = new ArrayList<KDTreeInt.Point<Void>>();
         for (int i = 0; i < number; i++) {
             l.add(new Point<Void>(r.nextInt(range), r.nextInt(range), null));
         }
