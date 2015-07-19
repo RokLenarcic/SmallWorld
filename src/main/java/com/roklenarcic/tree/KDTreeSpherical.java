@@ -55,27 +55,23 @@ public class KDTreeSpherical<T> {
     }
 
     private Point<T> buildTree(List<Point<T>> points, int axis) {
-        if (points.size() == 1) {
-            Point<T> p = points.get(0);
-            p.rotate(axis);
-            return p;
-        } else if (points.size() == 0) {
+        if (points.size() == 0) {
             return null;
         } else {
             // Sort by axis.
-            Collections.sort(points, comparators[axis]);
+            Collections.sort(points, comparators[axis % 3]);
             int pivotIdx = points.size() >> 1;
-            double pivotValue = points.get(pivotIdx).getCoordinate(axis);
-            // Find first point with the same axis value.
-            while (--pivotIdx >= 0 && points.get(pivotIdx).getCoordinate(axis) == pivotValue) {
+            if ((points.size() & 1) == 0) { // If odd size
+                // Shift pivot to the left every second level so for lists of size 4
+                // the pivot is idx 1 and 2 every other level.
+                pivotIdx -= axis & 1;
             }
-            pivotIdx++;
+
             Point<T> p = points.get(pivotIdx);
-            p.rotate(axis);
-            axis = (axis + 1) % 3;
+            p.rotate(axis % 3);
             // Build subtree. Bigger branch also contains points that has equal axis value to the pivot.
-            p.smaller = buildTree(points.subList(0, pivotIdx), axis);
-            p.bigger = buildTree(points.subList(pivotIdx + 1, points.size()), axis);
+            p.smaller = buildTree(points.subList(0, pivotIdx), axis + 1);
+            p.bigger = buildTree(points.subList(pivotIdx + 1, points.size()), axis + 1);
             return p;
         }
     }
@@ -203,10 +199,6 @@ public class KDTreeSpherical<T> {
                     }
                 }
             }
-        }
-
-        private double getCoordinate(int axis) {
-            return axis == 0 ? axisValue : (axis == 1 ? otherValue : otherValue2);
         }
 
         private void rotate(int axis) {

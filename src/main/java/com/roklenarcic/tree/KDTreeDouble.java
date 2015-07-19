@@ -70,24 +70,17 @@ public class KDTreeDouble<T> {
     }
 
     private Point<T> buildTree(List<Point<T>> points, int axis) {
-        if (points.size() == 1) {
-            Point<T> p = points.get(0);
-            p.rotate(axis);
-            if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
-                throw new IllegalArgumentException("Point " + p + " has coordinates out of the tree area.");
-            }
-            return p;
-        } else if (points.size() == 0) {
+        if (points.size() == 0) {
             return null;
         } else {
             // Sort by axis.
             Collections.sort(points, comparators[axis]);
             int pivotIdx = points.size() >> 1;
-            double pivotValue = points.get(pivotIdx).getCoordinate(axis);
-            // Find first point with the same axis value.
-            while (--pivotIdx >= 0 && points.get(pivotIdx).getCoordinate(axis) == pivotValue) {
+            if ((points.size() & 1) == 0) { // If odd size
+                // Shift pivot to the left every second level so for lists of size 4
+                // the pivot is idx 1 and 2 every other level.
+                pivotIdx -= axis;
             }
-            pivotIdx++;
             Point<T> p = points.get(pivotIdx);
             p.rotate(axis);
             if (p.x > xMax || p.x < xMin || p.y > yMax || p.y < yMin) {
@@ -207,10 +200,6 @@ public class KDTreeDouble<T> {
                     }
                 }
             }
-        }
-
-        private double getCoordinate(int axis) {
-            return axis == 0 ? x : y;
         }
 
         private void rotate(int axis) {

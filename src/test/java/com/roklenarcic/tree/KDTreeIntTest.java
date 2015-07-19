@@ -1,7 +1,6 @@
 package com.roklenarcic.tree;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -41,6 +40,16 @@ public class KDTreeIntTest {
     }
 
     @Test
+    public void testBalancing() {
+        List<Point<Void>> datasetPoints = generateRandomPoints1D(300, 100000);
+        List<Point<Void>> checkPoints = generateRandomPoints1D(10000, 100000);
+        KDTreeInt<Void> k = new KDTreeInt<Void>(datasetPoints, 0, 0, 100000, 100000);
+        for (Point<Void> p : checkPoints) {
+            confirm(p.getX(), p.getY(), k.findNearest(p.getX(), p.getY(), Integer.MAX_VALUE), datasetPoints, Integer.MAX_VALUE);
+        }
+    }
+
+    @Test
     public void testRandom() {
         List<Point<Void>> datasetPoints = generateRandomPoints(300, 100000);
         List<Point<Void>> checkPoints = generateRandomPoints(10000, 100000);
@@ -62,7 +71,8 @@ public class KDTreeIntTest {
 
     @Test
     public void testWrapping() {
-        List<Point<Void>> datasetPoints = Collections.singletonList(new Point<Void>(1000000, 0, null));
+        List<Point<Void>> datasetPoints = new ArrayList<Point<Void>>();
+        datasetPoints.add(new Point<Void>(1000000, 0, null));
         KDTreeInt<Void> k = new KDTreeInt<Void>(datasetPoints, 0, 0, 1000000, 1000000);
         Point<Void> p = k.findNearestWithWrapping(1, 0, 2);
         Assert.assertEquals(1000000, p.getX());
@@ -91,6 +101,15 @@ public class KDTreeIntTest {
         List<Point<Void>> l = new ArrayList<KDTreeInt.Point<Void>>();
         for (int i = 0; i < number; i++) {
             l.add(new Point<Void>(r.nextInt(range), r.nextInt(range), null));
+        }
+        return l;
+    }
+
+    private List<Point<Void>> generateRandomPoints1D(int number, int range) {
+        Random r = new Random();
+        List<Point<Void>> l = new ArrayList<KDTreeInt.Point<Void>>();
+        for (int i = 0; i < number; i++) {
+            l.add(new Point<Void>(r.nextInt(range), 0, null));
         }
         return l;
     }

@@ -30,7 +30,7 @@ So one can easily use the `int` tree by simply multiplying and truncating:
 The `int` tree has an advantage that every number and distance is representable and thus correctness is guaranteed.
 To achieve that the range on `int` tree coordinates is limited to [-590000000, 590000000] range (inclusive) or IllegalArgumentException will be thrown in constructor.
 
-The `int` tree is not any faster than `double` tree on normal desktop CPUs, but it takes less memory.
+The `int` tree is about 20% faster than `double` tree on normal desktop CPUs and it takes less memory.
 
 The `double` tree allows a larger range of [-3.7E153..3.7E153], but it has a few disadvantages.
 Some values are not exactly representable (e.g. 10.1, 3.3 etc) so the calculations might be slightly inaccurate.
@@ -48,5 +48,5 @@ But it is slower by about 50%. The azimuth value should be between [-180,180] an
 
 ## How fast is this?
 
-Fast enough. Single-threaded micro benchmark on Core i5 with 40k random points shows that 2-D trees need 500-700 nanoseconds per lookup, 15% slower if using wrapping.
-3-D spherical tree needs 1100-1300 nanoseconds per lookup.
+Fast enough. Single-threaded micro benchmark on Core i5 with 40k random points shows that 2-D trees need 400-500 (`int`) 500-600 (`double`) nanoseconds per lookup, 15% slower if using wrapping.
+3-D spherical tree needs 1100-1200 nanoseconds per lookup.
