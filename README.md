@@ -6,14 +6,17 @@ Java 5 compatible.
 
 ## Sample use
 
-```
+```java
 import com.roklenarcic.tree.KDTreeInt
 import com.roklenarcic.tree.KDTreeInt.Point
 
 List<Point<MyData>> points = ...construct data set
+
 // Parameters are points, minimum X coord, minimum Y coord, maximum X coord, maximum Y coord, all inclusive.
 KDTreeInt<MyData> tree = new KDTreeInt<MyData>(points, -180, -90, 180, 90);
+
 Point<MyData> closestPoint = tree.findNearest(4, 5, Integer.MAX_VALUE);
+
 // Find nearest point with X axis wrapping.
 Point<MyData> closestPointWithWrapping = tree.findNearestWithWrapping(4, 5, Integer.MAX_VALUE);
 ```
