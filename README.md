@@ -4,6 +4,16 @@ A small and fast library for finding nearest neighbor in a small data-set using 
 
 Java 5 compatible.
 
+## Maven dependency
+
+```
+    <dependency>
+        <groupId>com.github.roklenarcic</groupId>
+        <artifactId>small-world</artifactId>
+        <version>1.0</version>
+    </dependency>
+```
+
 ## Sample use
 
 ```java
