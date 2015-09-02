@@ -12,6 +12,20 @@ import com.roklenarcic.tree.KDTreeSpherical.Point;
 public class KDTreeSphericalTest {
 
     @Test
+    public void speedTestMultipleMatches() {
+        KDTreeSpherical<Void> k = new KDTreeSpherical<Void>(generateRandomPoints(40000), 180);
+        List<Point<Void>> checkPoints = generateRandomPoints(1000);
+        long start = System.nanoTime();
+        long sum = 0;
+        for (int i = 0; i < 100; i++) {
+            for (Point<Void> p : checkPoints) {
+                sum += k.findNearest(p.getAzimuth(), p.getInclination(), 5).hashCode();
+            }
+        }
+        System.out.println("Sum " + sum + " Time " + (System.nanoTime() - start) / (100 * checkPoints.size()) + " for 5 matches.");
+    }
+
+    @Test
     public void speedTestRandom() {
         KDTreeSpherical<Void> k = new KDTreeSpherical<Void>(generateRandomPoints(40000), 180);
         List<Point<Void>> checkPoints = generateRandomPoints(1000);

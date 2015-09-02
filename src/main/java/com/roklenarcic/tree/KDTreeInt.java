@@ -2,8 +2,17 @@ package com.roklenarcic.tree;
 
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 
+/**
+ *
+ *
+ * @author Rok Lenarcic
+ *
+ * @param <T>
+ *            Type of points' payloads
+ */
 public class KDTreeInt<T> {
 
     @SuppressWarnings("unchecked")
@@ -41,6 +50,21 @@ public class KDTreeInt<T> {
         return nearest.p;
     }
 
+    public Iterable<Point<T>> findNearest(int x, int y, int maxDistance, int numberOfNearest) {
+        if (root != null) {
+            long md = maxDistance;
+            LinkedList<T> nearestPoints = LinkedList.constructChain(numberOfNearest, md * md);
+            nearestPoints = root.findNearest(x, y, nearestPoints).dropEmptyPrefix();
+            if (nearestPoints != null) {
+                return nearestPoints.reverse();
+            } else {
+                return Collections.emptyList();
+            }
+        } else {
+            return Collections.emptyList();
+        }
+    }
+
     // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
     // coordinates are valid.
     public Point<T> findNearestWithWrapping(int x, int y, int maxDistance) {
@@ -66,6 +90,39 @@ public class KDTreeInt<T> {
             }
         }
         return nearest.p;
+    }
+
+    // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
+    // coordinates are valid.
+    public Iterable<Point<T>> findNearestWithWrapping(int x, int y, int maxDistance, int numberOfNearest) {
+        if (root != null) {
+            long md = maxDistance;
+            LinkedList<T> nearestPoints = LinkedList.constructChain(numberOfNearest, md * md);
+            nearestPoints = root.findNearest(x, y, nearestPoints);
+            if (nearestPoints.distance > 0) {
+                // No point found within max distance, see if point + max distance crosses the wrap
+                // It can only wrap around the nearest border.
+                if (xMin + xMax > x << 1) {
+                    long distanceToLeftBorder = x - xMin;
+                    if (distanceToLeftBorder * distanceToLeftBorder < nearestPoints.distance) {
+                        nearestPoints = root.findNearest(xMax + distanceToLeftBorder + 1, y, nearestPoints);
+                    }
+                } else {
+                    long distanceToRightBorder = xMax - x;
+                    if (distanceToRightBorder * distanceToRightBorder < nearestPoints.distance) {
+                        nearestPoints = root.findNearest(xMin - distanceToRightBorder - 1, y, nearestPoints);
+                    }
+                }
+            }
+            nearestPoints = nearestPoints.dropEmptyPrefix();
+            if (nearestPoints != null) {
+                return nearestPoints.reverse();
+            } else {
+                return Collections.emptyList();
+            }
+        } else {
+            return Collections.emptyList();
+        }
     }
 
     private Point<T> buildTree(List<Point<T>> points, int axis) {
@@ -140,6 +197,103 @@ public class KDTreeInt<T> {
             return "X=" + x + ", Y=" + y;
         }
 
+        private LinkedList<T> findNearest(long queryAxis, long queryOther, LinkedList<T> currentBest) {
+            // Negative number means this point is on the left to the query point.
+            long diffAxis = queryAxis - axisValue;
+            if (diffAxis >= 0) {
+                // First check the closer side
+                if (bigger != null) {
+                    currentBest = bigger.findNearest(queryOther, queryAxis, currentBest);
+                }
+                // Now let's see it the other side is still relevant. Since that search
+                // might have narrowed the circle.
+
+                // Calculate distance to axis.
+                long distanceToHyperplane = diffAxis * diffAxis;
+                // See if line intersects circle
+                if (distanceToHyperplane <= currentBest.distance) {
+                    // If it does then this point might be the best one.
+                    long diffOther = queryOther - otherValue;
+                    long d = distanceToHyperplane + diffOther * diffOther;
+                    if (d <= currentBest.distance) {
+                        // Start with the farthest point in the list
+                        // This point is farther than the this point
+                        LinkedList<T> farther = currentBest;
+                        LinkedList<T> newHead = currentBest;
+                        // Scroll down the list to find the last node that is farther than this node
+                        while (farther.tail != null && d <= farther.tail.distance) {
+                            farther = farther.tail;
+                            newHead = currentBest.tail;
+                        }
+                        currentBest.head = this;
+                        currentBest.distance = d;
+                        // Here's a bit of a trickeroo. We've got 2 scenarios:
+                        // - The farthest (first) point in the list is the one being replaced. In that case
+                        // it's really easy, we're done already.
+                        // - In other cases we need assign first point (currentBest) into the chain as tail of
+                        // "farther" then we need to update currentBest as tail of currentBest to keep the
+                        // currentBest as the start of the chain.
+                        //
+                        // The trick both cases can be solved by the same code.
+                        LinkedList<T> tail = farther.tail;
+                        farther.tail = currentBest;
+                        currentBest.tail = tail;
+                        currentBest = newHead;
+                    }
+                    // Search the other side.
+                    if (smaller != null) {
+                        currentBest = smaller.findNearest(queryOther, queryAxis, currentBest);
+                    }
+                }
+            } else {
+                // First check the closer side
+                if (smaller != null) {
+                    currentBest = smaller.findNearest(queryOther, queryAxis, currentBest);
+                }
+                // Now let's see it the other side is still relevant. Since that search
+                // might have narrowed the circle.
+
+                // Calculate distance to axis.
+                long distanceToHyperplane = diffAxis * diffAxis;
+                // See if line intersects circle
+                if (distanceToHyperplane <= currentBest.distance) {
+                    // If it does then this point might be the best one.
+                    long diffOther = queryOther - otherValue;
+                    long d = distanceToHyperplane + diffOther * diffOther;
+                    if (d <= currentBest.distance) {
+                        // Start with the farthest point in the list
+                        // This point is farther than the this point
+                        LinkedList<T> farther = currentBest;
+                        LinkedList<T> newHead = currentBest;
+                        // Scroll down the list to find the last node that is farther than this node
+                        while (farther.tail != null && d <= farther.tail.distance) {
+                            farther = farther.tail;
+                            newHead = currentBest.tail;
+                        }
+                        currentBest.head = this;
+                        currentBest.distance = d;
+                        // Here's a bit of a trickeroo. We've got 2 scenarios:
+                        // - The farthest (first) point in the list is the one being replaced. In that case
+                        // it's really easy, we're done already.
+                        // - In other cases we need assign first point (currentBest) into the chain as tail of
+                        // "farther" then we need to update currentBest as tail of currentBest to keep the
+                        // currentBest as the start of the chain.
+                        //
+                        // The trick both cases can be solved by the same code.
+                        LinkedList<T> tail = farther.tail;
+                        farther.tail = currentBest;
+                        currentBest.tail = tail;
+                        currentBest = newHead;
+                    }
+                    // Search the other side.
+                    if (bigger != null) {
+                        currentBest = bigger.findNearest(queryOther, queryAxis, currentBest);
+                    }
+                }
+            }
+            return currentBest;
+        }
+
         private void findNearest(long queryAxis, long queryOther, NearestPoint<T> currentBest) {
             // Negative number means this point is on the left to the query point.
             long diffAxis = queryAxis - axisValue;
@@ -204,8 +358,71 @@ public class KDTreeInt<T> {
 
     }
 
+    private static class LinkedList<T> implements Iterable<Point<T>> {
+
+        private static <T> LinkedList<T> constructChain(int length, long distance) {
+            LinkedList<T> ret = new LinkedList<T>(distance);
+            for (int i = 1; i < length; i++) {
+                LinkedList<T> nextNode = new LinkedList<T>(distance);
+                nextNode.tail = ret;
+                ret = nextNode;
+            }
+            return ret;
+        }
+
+        private long distance;
+        private Point<T> head;
+        private LinkedList<T> tail;
+
+        private LinkedList(long distance) {
+            this.distance = distance;
+        }
+
+        public LinkedList<T> dropEmptyPrefix() {
+            LinkedList<T> c = LinkedList.this;
+            while (c != null && c.head == null) {
+                c = c.tail;
+            }
+            return c;
+        }
+
+        public Iterator<Point<T>> iterator() {
+            return new Iterator<Point<T>>() {
+
+                private LinkedList<T> cursor = LinkedList.this;
+
+                public boolean hasNext() {
+                    return cursor != null;
+                }
+
+                public Point<T> next() {
+                    Point<T> p = cursor.head;
+                    cursor = cursor.tail;
+                    return p;
+                }
+
+                public void remove() {
+                    throw new UnsupportedOperationException();
+                }
+            };
+        }
+
+        public LinkedList<T> reverse() {
+            LinkedList<T> c = LinkedList.this;
+            LinkedList<T> prev = null;
+            while (c != null) {
+                LinkedList<T> tmp = c;
+                c = c.tail;
+                tmp.tail = prev;
+                prev = tmp;
+            }
+            return prev;
+        }
+    }
+
     private static class NearestPoint<T> {
         private long distance;
         private Point<T> p;
     }
+
 }

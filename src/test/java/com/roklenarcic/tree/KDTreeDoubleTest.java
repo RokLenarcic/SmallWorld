@@ -1,6 +1,8 @@
 package com.roklenarcic.tree;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
@@ -10,6 +12,20 @@ import org.junit.Test;
 import com.roklenarcic.tree.KDTreeDouble.Point;
 
 public class KDTreeDoubleTest {
+
+    @Test
+    public void speedTestMultipleMatches() {
+        KDTreeDouble<Void> k = new KDTreeDouble<Void>(generateRandomPoints(40000, 1000000), 0, 0, 1000000, 1000000);
+        List<Point<Void>> checkPoints = generateRandomPoints(1000, 1000000);
+        long start = System.nanoTime();
+        long sum = 0;
+        for (int i = 0; i < 100; i++) {
+            for (Point<Void> p : checkPoints) {
+                sum += k.findNearest(p.getX(), p.getY(), Integer.MAX_VALUE, 5).hashCode();
+            }
+        }
+        System.out.println("Sum " + sum + " Time " + (System.nanoTime() - start) / (100 * checkPoints.size()) + " for 5 matches.");
+    }
 
     @Test
     public void speedTestRandom() {
@@ -78,6 +94,21 @@ public class KDTreeDoubleTest {
         Assert.assertTrue(100000 == p.getX());
         p = k.findNearestWithWrapping(1, 0, 1);
         Assert.assertEquals(null, p);
+    }
+
+    @Test
+    public void testWrappingWithMultipleMatches() {
+        List<Point<Void>> datasetPoints = new ArrayList<Point<Void>>();
+        datasetPoints.add(new Point<Void>(1000000, 0, null));
+        datasetPoints.add(new Point<Void>(999999, 0, null));
+        datasetPoints.add(new Point<Void>(3, 0, null));
+        KDTreeDouble<Void> k = new KDTreeDouble<Void>(datasetPoints, 0, 0, 1000000, 1000000);
+        Iterator<Point<Void>> iter = k.findNearestWithWrapping(1, 0, 3, 3).iterator();
+        Assert.assertTrue(1000000 == iter.next().getX());
+        Assert.assertTrue(3 == iter.next().getX());
+        Assert.assertTrue(999999 == iter.next().getX());
+        Assert.assertEquals(false, iter.hasNext());
+        Assert.assertEquals(Collections.EMPTY_LIST, k.findNearestWithWrapping(1, 0, 1, 3));
     }
 
     private void confirm(double x, double y, Point<Void> calculatedPoint, List<Point<Void>> datasetPoints, int maxDistance) {
