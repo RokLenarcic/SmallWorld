@@ -200,95 +200,56 @@ public class KDTreeInt<T> {
         private LinkedList<T> findNearest(long queryAxis, long queryOther, LinkedList<T> currentBest) {
             // Negative number means this point is on the left to the query point.
             long diffAxis = queryAxis - axisValue;
+            Point<T> closerChild, fartherChild;
             if (diffAxis >= 0) {
-                // First check the closer side
-                if (bigger != null) {
-                    currentBest = bigger.findNearest(queryOther, queryAxis, currentBest);
-                }
-                // Now let's see it the other side is still relevant. Since that search
-                // might have narrowed the circle.
-
-                // Calculate distance to axis.
-                long distanceToHyperplane = diffAxis * diffAxis;
-                // See if line intersects circle
-                if (distanceToHyperplane <= currentBest.distance) {
-                    // If it does then this point might be the best one.
-                    long diffOther = queryOther - otherValue;
-                    long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d <= currentBest.distance) {
-                        // Start with the farthest point in the list
-                        // This point is farther than the this point
-                        LinkedList<T> farther = currentBest;
-                        LinkedList<T> newHead = currentBest;
-                        // Scroll down the list to find the last node that is farther than this node
-                        while (farther.tail != null && d <= farther.tail.distance) {
-                            farther = farther.tail;
-                            newHead = currentBest.tail;
-                        }
-                        currentBest.head = this;
-                        currentBest.distance = d;
-                        // Here's a bit of a trickeroo. We've got 2 scenarios:
-                        // - The farthest (first) point in the list is the one being replaced. In that case
-                        // it's really easy, we're done already.
-                        // - In other cases we need assign first point (currentBest) into the chain as tail of
-                        // "farther" then we need to update currentBest as tail of currentBest to keep the
-                        // currentBest as the start of the chain.
-                        //
-                        // The trick both cases can be solved by the same code.
-                        LinkedList<T> tail = farther.tail;
-                        farther.tail = currentBest;
-                        currentBest.tail = tail;
-                        currentBest = newHead;
-                    }
-                    // Search the other side.
-                    if (smaller != null) {
-                        currentBest = smaller.findNearest(queryOther, queryAxis, currentBest);
-                    }
-                }
+                closerChild = bigger;
+                fartherChild = smaller;
             } else {
-                // First check the closer side
-                if (smaller != null) {
-                    currentBest = smaller.findNearest(queryOther, queryAxis, currentBest);
-                }
-                // Now let's see it the other side is still relevant. Since that search
-                // might have narrowed the circle.
+                closerChild = smaller;
+                fartherChild = bigger;
+            }
+            // First check the closer side
+            if (closerChild != null) {
+                currentBest = closerChild.findNearest(queryOther, queryAxis, currentBest);
+            }
+            // Now let's see it the other side is still relevant. Since that search
+            // might have narrowed the circle.
 
-                // Calculate distance to axis.
-                long distanceToHyperplane = diffAxis * diffAxis;
-                // See if line intersects circle
-                if (distanceToHyperplane <= currentBest.distance) {
-                    // If it does then this point might be the best one.
-                    long diffOther = queryOther - otherValue;
-                    long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d <= currentBest.distance) {
-                        // Start with the farthest point in the list
-                        // This point is farther than the this point
-                        LinkedList<T> farther = currentBest;
-                        LinkedList<T> newHead = currentBest;
-                        // Scroll down the list to find the last node that is farther than this node
-                        while (farther.tail != null && d <= farther.tail.distance) {
-                            farther = farther.tail;
-                            newHead = currentBest.tail;
-                        }
-                        currentBest.head = this;
-                        currentBest.distance = d;
-                        // Here's a bit of a trickeroo. We've got 2 scenarios:
-                        // - The farthest (first) point in the list is the one being replaced. In that case
-                        // it's really easy, we're done already.
-                        // - In other cases we need assign first point (currentBest) into the chain as tail of
-                        // "farther" then we need to update currentBest as tail of currentBest to keep the
-                        // currentBest as the start of the chain.
-                        //
-                        // The trick both cases can be solved by the same code.
-                        LinkedList<T> tail = farther.tail;
-                        farther.tail = currentBest;
-                        currentBest.tail = tail;
-                        currentBest = newHead;
+            // Calculate distance to axis.
+            long distanceToHyperplane = diffAxis * diffAxis;
+            // See if line intersects circle
+            if (distanceToHyperplane <= currentBest.distance) {
+                // If it does then this point might be the best one.
+                long diffOther = queryOther - otherValue;
+                long d = distanceToHyperplane + diffOther * diffOther;
+                if (d <= currentBest.distance) {
+                    // Start with the farthest point in the list
+                    // This point is farther than the this point
+                    LinkedList<T> farther = currentBest;
+                    LinkedList<T> newHead = currentBest;
+                    // Scroll down the list to find the last node that is farther than this node
+                    while (farther.tail != null && d <= farther.tail.distance) {
+                        farther = farther.tail;
+                        newHead = currentBest.tail;
                     }
-                    // Search the other side.
-                    if (bigger != null) {
-                        currentBest = bigger.findNearest(queryOther, queryAxis, currentBest);
-                    }
+                    currentBest.head = this;
+                    currentBest.distance = d;
+                    // Here's a bit of a trickeroo. We've got 2 scenarios:
+                    // - The farthest (first) point in the list is the one being replaced. In that case
+                    // it's really easy, we're done already.
+                    // - In other cases we need assign first point (currentBest) into the chain as tail of
+                    // "farther" then we need to update currentBest as tail of currentBest to keep the
+                    // currentBest as the start of the chain.
+                    //
+                    // The trick both cases can be solved by the same code.
+                    LinkedList<T> tail = farther.tail;
+                    farther.tail = currentBest;
+                    currentBest.tail = tail;
+                    currentBest = newHead;
+                }
+                // Search the other side.
+                if (fartherChild != null) {
+                    currentBest = fartherChild.findNearest(queryOther, queryAxis, currentBest);
                 }
             }
             return currentBest;
