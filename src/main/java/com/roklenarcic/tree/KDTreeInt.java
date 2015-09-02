@@ -297,53 +297,35 @@ public class KDTreeInt<T> {
         private void findNearest(long queryAxis, long queryOther, NearestPoint<T> currentBest) {
             // Negative number means this point is on the left to the query point.
             long diffAxis = queryAxis - axisValue;
+            Point<T> closerChild, fartherChild;
             if (diffAxis >= 0) {
-                // First check the closer side
-                if (bigger != null) {
-                    bigger.findNearest(queryOther, queryAxis, currentBest);
-                }
-                // Now let's see it the other side is still relevant. Since that search
-                // might have narrowed the circle.
-
-                // Calculate distance to axis.
-                long distanceToHyperplane = diffAxis * diffAxis;
-                // See if line intersects circle
-                if (distanceToHyperplane <= currentBest.distance) {
-                    // If it does then this point might be the best one.
-                    long diffOther = queryOther - otherValue;
-                    long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d <= currentBest.distance) {
-                        currentBest.p = this;
-                        currentBest.distance = d;
-                    }
-                    // Search the other side.
-                    if (smaller != null) {
-                        smaller.findNearest(queryOther, queryAxis, currentBest);
-                    }
-                }
+                closerChild = bigger;
+                fartherChild = smaller;
             } else {
-                // First check the closer side
-                if (smaller != null) {
-                    smaller.findNearest(queryOther, queryAxis, currentBest);
-                }
-                // Now let's see it the other side is still relevant. Since that search
-                // might have narrowed the circle.
+                closerChild = smaller;
+                fartherChild = bigger;
+            }
+            // First check the closer side
+            if (closerChild != null) {
+                closerChild.findNearest(queryOther, queryAxis, currentBest);
+            }
+            // Now let's see it the other side is still relevant. Since that search
+            // might have narrowed the circle.
 
-                // Calculate distance to axis.
-                long distanceToHyperplane = diffAxis * diffAxis;
-                // See if line intersects circle
-                if (distanceToHyperplane <= currentBest.distance) {
-                    // If it does then this point might be the best one.
-                    long diffOther = queryOther - otherValue;
-                    long d = distanceToHyperplane + diffOther * diffOther;
-                    if (d <= currentBest.distance) {
-                        currentBest.p = this;
-                        currentBest.distance = d;
-                    }
-                    // Search the other side.
-                    if (bigger != null) {
-                        bigger.findNearest(queryOther, queryAxis, currentBest);
-                    }
+            // Calculate distance to axis.
+            long distanceToHyperplane = diffAxis * diffAxis;
+            // See if line intersects circle
+            if (distanceToHyperplane <= currentBest.distance) {
+                // If it does then this point might be the best one.
+                long diffOther = queryOther - otherValue;
+                long d = distanceToHyperplane + diffOther * diffOther;
+                if (d <= currentBest.distance) {
+                    currentBest.p = this;
+                    currentBest.distance = d;
+                }
+                // Search the other side.
+                if (fartherChild != null) {
+                    fartherChild.findNearest(queryOther, queryAxis, currentBest);
                 }
             }
         }
