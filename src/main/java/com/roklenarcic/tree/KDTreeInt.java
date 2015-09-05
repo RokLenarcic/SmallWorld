@@ -6,12 +6,18 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
+ * 2-D tree with coordinates of the int type.
+ *
+ * It is instantiated with a list of points, and the coordinates of the area of the map. The area information
+ * is used in wrapping.
+ *
+ * The maximum area coordinates are limited to [-590000000, 590000000].
  *
  *
  * @author Rok Lenarcic
  *
  * @param <T>
- *            Type of points' payloads
+ *            Value to be stored in points.
  */
 public class KDTreeInt<T> {
 
@@ -24,7 +30,21 @@ public class KDTreeInt<T> {
     private final int yMax;
     private final int yMin;
 
-    // Build a tree from list of points.
+    /**
+     * Build a tree from list of points, where points are given by the objects of the Point class. The map
+     * area is limited by the limits given, inclusive.
+     *
+     * @param points
+     *            list of points with coordinates and values
+     * @param xMin
+     *            minimum value of x coordinate of a point, inclusive
+     * @param yMin
+     *            minimum value of y coordinate of a point, inclusive
+     * @param xMax
+     *            maximum value of x coordinate of a point, inclusive
+     * @param yMax
+     *            maximum value of y coordinate of a point, inclusive
+     */
     public KDTreeInt(List<Point<T>> points, int xMin, int yMin, int xMax, int yMax) {
         if (xMin < xMax && yMin < yMax) {
             this.xMin = xMin;
@@ -40,6 +60,18 @@ public class KDTreeInt<T> {
         }
     }
 
+    /**
+     * Find the nearest point to the coordinates given, that is within the maximum distance given, inclusive.
+     * The smaller the maximum distance, the faster the query.
+     *
+     * @param x
+     *            x coordinate of the query point
+     * @param y
+     *            y coordinate of the query point
+     * @param maxDistance
+     *            maximum distance from the point of the query to search
+     * @return the point in the tree closest to the coordinates given within max distance
+     */
     public Point<T> findNearest(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
@@ -50,6 +82,22 @@ public class KDTreeInt<T> {
         return nearest.p;
     }
 
+    /**
+     * Find a number of nearest points to the coordinates given that are within the maximum distance given,
+     * inclusive. The smaller the maximum distance, the faster the query. The points returned are sorted from
+     * the closest to the farthest.
+     *
+     * @param x
+     *            x coordinate of the query point
+     * @param y
+     *            y coordinate of the query point
+     * @param maxDistance
+     *            maximum distance from the point of the query to search
+     * @param numberOfNearest
+     *            number of points to return
+     * @return an iterable of points in the tree closest to the coordinates given, in order of ascending
+     *         distance
+     */
     public Iterable<Point<T>> findNearest(int x, int y, int maxDistance, int numberOfNearest) {
         if (root != null) {
             long md = maxDistance;
@@ -65,8 +113,19 @@ public class KDTreeInt<T> {
         }
     }
 
-    // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
-    // coordinates are valid.
+    /**
+     * Find the nearest point to the coordinates given, that is within the maximum distance given, inclusive.
+     * The smaller the maximum distance, the faster the query. The search wraps across the x axis, where
+     * borders used are the ones given in the constructor. Borders are inclusive.
+     *
+     * @param x
+     *            x coordinate of the query point
+     * @param y
+     *            y coordinate of the query point
+     * @param maxDistance
+     *            maximum distance from the point of the query to search
+     * @return the point in the tree closest to the coordinates given within max distance
+     */
     public Point<T> findNearestWithWrapping(int x, int y, int maxDistance) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
@@ -92,8 +151,25 @@ public class KDTreeInt<T> {
         return nearest.p;
     }
 
-    // Search and wrap on x axis. The borders are inclusive e.g. -180, 180 means that both those
-    // coordinates are valid.
+    /**
+     * Find a number of nearest points to the coordinates given that are within the maximum distance given,
+     * inclusive. The smaller the maximum distance, the faster the query. The points returned are sorted from
+     * the closest to the farthest.
+     *
+     * The search wraps across the x axis, where borders used are the ones given in the constructor. Borders
+     * are inclusive.
+     *
+     * @param x
+     *            x coordinate of the query point
+     * @param y
+     *            y coordinate of the query point
+     * @param maxDistance
+     *            maximum distance from the point of the query to search
+     * @param numberOfNearest
+     *            number of points to return
+     * @return an iterable of points in the tree closest to the coordinates given, in order of ascending
+     *         distance
+     */
     public Iterable<Point<T>> findNearestWithWrapping(int x, int y, int maxDistance, int numberOfNearest) {
         if (root != null) {
             long md = maxDistance;
@@ -150,6 +226,14 @@ public class KDTreeInt<T> {
         }
     }
 
+    /**
+     * Point in the 2-D space with a user specified value attached to it.
+     *
+     * @author Rok Lenarcic
+     *
+     * @param <T>
+     *            type of value
+     */
     public static class Point<T> {
 
         private static Comparator<Point<?>> createComparator(final int axis) {
@@ -171,6 +255,13 @@ public class KDTreeInt<T> {
 
         private final int x, y;
 
+        /**
+         * New point with the specified coordinates and the value.
+         *
+         * @param x
+         * @param y
+         * @param value
+         */
         public Point(int x, int y, T value) {
             super();
             this.x = x;
@@ -180,21 +271,28 @@ public class KDTreeInt<T> {
             this.value = value;
         }
 
+        /**
+         *
+         * @return the value of the point
+         */
         public T getValue() {
             return value;
         }
 
+        /**
+         *
+         * @return the x coordinate of the point
+         */
         public int getX() {
             return x;
         }
 
+        /**
+         *
+         * @return the y coordinate of the point
+         */
         public int getY() {
             return y;
-        }
-
-        @Override
-        public String toString() {
-            return "X=" + x + ", Y=" + y;
         }
 
         private LinkedList<T> findNearest(long queryAxis, long queryOther, LinkedList<T> currentBest) {

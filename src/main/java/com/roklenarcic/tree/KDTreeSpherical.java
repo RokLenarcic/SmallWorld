@@ -5,6 +5,18 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+/**
+ * 3-D tree with coordinates of the double type.
+ *
+ * It is instantiated with a list of points, with the coordinates longitude and latitude. The values are
+ * limited to range [-180, 180] and [-90, 90].
+ *
+ *
+ * @author Rok Lenarcic
+ *
+ * @param <T>
+ *            Value to be stored in points.
+ */
 public class KDTreeSpherical<T> {
 
     private static final double DEGREES_IN_RADIAN = 57.29577951308233;
@@ -16,7 +28,14 @@ public class KDTreeSpherical<T> {
     private double maxDistance;
     private final Point<T> root;
 
-    // Build a tree from list of points.
+    /**
+     * Build a tree from list of points, where points are given by the objects of the Point class.
+     *
+     * @param points
+     *            list of points with coordinates and values
+     * @param maxDistance
+     *            max distance from query point to search, must be in [0, 180] range
+     */
     public KDTreeSpherical(List<Point<T>> points, double maxDistance) {
         // Convert maxDistance along the sphere into chord length
         // chord = 2 * sin (1/2 * angle) where angle is the maxDistance since we have a unit
@@ -29,13 +48,23 @@ public class KDTreeSpherical<T> {
         root = buildTree(points, 0);
     }
 
-    public Point<T> findNearest(double azimuth, double inclination) {
+    /**
+     * Find the nearest point to the coordinates given, that is within the maximum distance, inclusive. The
+     * smaller the maximum distance, the faster the query.
+     *
+     * @param longitude
+     *            longitude coordinate of the query point
+     * @param latitude
+     *            latitude coordinate of the query point
+     * @return the point in the tree closest to the coordinates given within max distance
+     */
+    public Point<T> findNearest(double longitude, double latitude) {
         NearestPoint<T> nearest = new NearestPoint<T>();
         if (root != null) {
             nearest.distance = this.maxDistance;
             // Calculate those cartesian coordinates
-            azimuth = (azimuth + 180) / DEGREES_IN_RADIAN;
-            inclination = (-inclination + 90) / DEGREES_IN_RADIAN;
+            double azimuth = (longitude + 180) / DEGREES_IN_RADIAN;
+            double inclination = (-latitude + 90) / DEGREES_IN_RADIAN;
             double sinAzimuth = Math.sin(azimuth);
             double cosAzimuth = Math.cos(azimuth);
             double sinInclination = Math.sin(inclination);
@@ -45,40 +74,31 @@ public class KDTreeSpherical<T> {
         return nearest.p;
     }
 
-    public Iterable<Point<T>> findNearest(double azimuth, double inclination, int numberOfNearest) {
+    /**
+     * Find a number of nearest points to the coordinates given that are within the maximum distance given,
+     * inclusive. The smaller the maximum distance, the faster the query. The points returned are sorted from
+     * the closest to the farthest.
+     *
+     * @param longitude
+     *            longitude coordinate of the query point
+     * @param latitude
+     *            latitude coordinate of the query point
+     * @param numberOfNearest
+     *            number of points to return
+     * @return an iterable of points in the tree closest to the coordinates given, in order of ascending
+     *         distance
+     */
+    public Iterable<Point<T>> findNearest(double longitude, double latitude, int numberOfNearest) {
         if (root != null) {
             LinkedList<T> nearestPoints = LinkedList.constructChain(numberOfNearest, this.maxDistance);
             // Calculate those cartesian coordinates
-            azimuth = (azimuth + 180) / DEGREES_IN_RADIAN;
-            inclination = (-inclination + 90) / DEGREES_IN_RADIAN;
+            double azimuth = (longitude + 180) / DEGREES_IN_RADIAN;
+            double inclination = (-latitude + 90) / DEGREES_IN_RADIAN;
             double sinAzimuth = Math.sin(azimuth);
             double cosAzimuth = Math.cos(azimuth);
             double sinInclination = Math.sin(inclination);
             double cosInclination = Math.cos(inclination);
             nearestPoints = root.findNearest(sinInclination * cosAzimuth, sinInclination * sinAzimuth, cosInclination, nearestPoints).dropEmptyPrefix();
-            if (nearestPoints != null) {
-                return nearestPoints.reverse();
-            } else {
-                return Collections.emptyList();
-            }
-        } else {
-            return Collections.emptyList();
-        }
-    }
-
-    public Point<T> findNearest(Point<T> p) {
-        NearestPoint<T> nearest = new NearestPoint<T>();
-        if (root != null) {
-            nearest.distance = this.maxDistance;
-            root.findNearest(p.axisValue, p.otherValue, p.otherValue2, nearest);
-        }
-        return nearest.p;
-    }
-
-    public Iterable<Point<T>> findNearest(Point<T> p, int numberOfNearest) {
-        if (root != null) {
-            LinkedList<T> nearestPoints = LinkedList.constructChain(numberOfNearest, maxDistance);
-            nearestPoints = root.findNearest(p.axisValue, p.otherValue, p.otherValue2, nearestPoints).dropEmptyPrefix();
             if (nearestPoints != null) {
                 return nearestPoints.reverse();
             } else {
@@ -111,6 +131,14 @@ public class KDTreeSpherical<T> {
         }
     }
 
+    /**
+     * Point in the 3-D space on a sphere with a user specified value attached to it.
+     *
+     * @author Rok Lenarcic
+     *
+     * @param <T>
+     *            type of value
+     */
     public static class Point<T> {
 
         private static Comparator<Point<?>> createComparator(final int axis) {
@@ -131,7 +159,7 @@ public class KDTreeSpherical<T> {
         // Axis value other value contain x and y, but in such order
         // that the value that is used as axis for this point is in axisValue variable.
         private double axisValue;
-        private final double azimuth, inclination;
+        private final double longitude, latitude;
         private double otherValue;
 
         private double otherValue2;
@@ -140,19 +168,27 @@ public class KDTreeSpherical<T> {
 
         private final T value;
 
-        public Point(double azimuth, double inclination, T value) {
-            this.azimuth = azimuth;
-            this.inclination = inclination;
-            if (azimuth > 180 || azimuth < -180 || inclination > 90 || inclination < -90) {
-                throw new IllegalArgumentException("Point " + this + " has azimuth outside [-180, 180] or inclination [-90, 90].");
+        /**
+         * New point with the specified coordinates and the value. The constructor maps the point to 3-D space
+         * (non-trivial cost).
+         *
+         * @param longitude
+         * @param latitude
+         * @param value
+         */
+        public Point(double longitude, double latitude, T value) {
+            this.longitude = longitude;
+            this.latitude = latitude;
+            if (longitude > 180 || longitude < -180 || latitude > 90 || latitude < -90) {
+                throw new IllegalArgumentException("Point " + this + " has longitude outside [-180, 180] or latitude outside [-90, 90].");
             }
             // Save the coordinates
-            // Now translate them
-            // 90 is 0 inclination, -90 is 180
-            // -180 is 0 azimuth (different than earth, but we don't care)
+            // Now translate them:
+            // Latitude 90 is 0 inclination, -90 is 180
+            // Longitude -180 is 0 azimuth (different than earth, but we don't care)
             // then into the radians.
-            azimuth = (azimuth + 180) / DEGREES_IN_RADIAN;
-            inclination = (-inclination + 90) / DEGREES_IN_RADIAN;
+            double azimuth = (longitude + 180) / DEGREES_IN_RADIAN;
+            double inclination = (-latitude + 90) / DEGREES_IN_RADIAN;
             double sinAzimuth = Math.sin(azimuth);
             double cosAzimuth = Math.cos(azimuth);
             double sinInclination = Math.sin(inclination);
@@ -163,21 +199,33 @@ public class KDTreeSpherical<T> {
             this.value = value;
         }
 
-        public double getAzimuth() {
-            return azimuth;
+        /**
+         *
+         * @return the latitude of the point
+         */
+        public double getLatitude() {
+            return latitude;
         }
 
-        public double getInclination() {
-            return inclination;
+        /**
+         *
+         * @return the longitude of the point
+         */
+        public double getLongitude() {
+            return longitude;
         }
 
+        /**
+         *
+         * @return the value of the point
+         */
         public T getValue() {
             return value;
         }
 
         @Override
         public String toString() {
-            return "Azimuth=" + azimuth + ", Inclination=" + inclination;
+            return "Longitude=" + longitude + ", Latitude=" + latitude;
         }
 
         private LinkedList<T> findNearest(double queryAxis, double queryOther, double queryOther2, LinkedList<T> currentBest) {

@@ -1,6 +1,7 @@
 # Small World
 
 A small and fast library for finding nearest neighbor in a small data-set using a kd-tree.
+It supports finding `n` nearest points too.
 
 Java 5 compatible.
 
@@ -10,7 +11,7 @@ Java 5 compatible.
     <dependency>
         <groupId>com.github.roklenarcic</groupId>
         <artifactId>small-world</artifactId>
-        <version>1.0</version>
+        <version>1.1</version>
     </dependency>
 ```
 
@@ -25,10 +26,14 @@ List<Point<MyData>> points = ...construct data set
 // Parameters are points, minimum X coord, minimum Y coord, maximum X coord, maximum Y coord, all inclusive.
 KDTreeInt<MyData> tree = new KDTreeInt<MyData>(points, -180, -90, 180, 90);
 
+// Find the nearest point within MAXINT range 
 Point<MyData> closestPoint = tree.findNearest(4, 5, Integer.MAX_VALUE);
 
 // Find nearest point with X axis wrapping.
 Point<MyData> closestPointWithWrapping = tree.findNearestWithWrapping(4, 5, Integer.MAX_VALUE);
+
+// Find nearest n points with X axis wrapping, sorted from the nearest to the farthest.
+Iterable<Point<MyData>> closestFivePointsWithWrapping = tree.findNearestWithWrapping(4, 5, Integer.MAX_VALUE, 5);
 ```
 
 ## KDTreeInt and KDTreeDouble
@@ -51,15 +56,17 @@ Points that are extremely close together might cause an underflow when calculati
 
 e.g. `(10.00000000000000001 - 10.00000000000000002) ^ 2 = 0.0000000000000000000.....`
 
-It might also be slower on platforms with slow floating point operations.
+It might also be slower on platforms with slow floating point operations or 32-bit platforms.
 
 ## KDTreeSpherical
 
-This variant uses a 3-D tree which models the world as a sphere. This solves problems with wrapping in 2 dimensions and with distance distortion, which is present in 2-D trees.
+This variant of the tree is created specifically for geographical data. It uses a 3-D tree which models the world as a sphere, projecting longitude and latitude onto the sphere. This solves problems with wrapping in 2 dimensions and with distance distortion of projecting a sphere onto a 2-D plane, which is present in 2-D trees.
 
-But it is slower by about 50%. The azimuth value should be between [-180,180] and inclination should be [-90,90].
+The cost of better accuracy and wrapping is that it's slower by about 50%. The azimuth value should be between [-180,180] and inclination should be [-90,90].
 
 ## How fast is this?
 
 Fast enough. Single-threaded micro benchmark on Core i5 with 40k random points shows that 2-D trees need 400-500 (`int`) 500-600 (`double`) nanoseconds per lookup, 15% slower if using wrapping.
 3-D spherical tree needs 1100-1200 nanoseconds per lookup.
+
+Asking for multiple matches will slow things down significantly, asking for 5 nearest matches doubles the time required, asking for 10 nearest triples the time. This functionality was designed with fairly low number of matches in mind, if you need 100+ nearest points, let me know.

@@ -19,7 +19,7 @@ public class KDTreeSphericalTest {
         long sum = 0;
         for (int i = 0; i < 100; i++) {
             for (Point<Void> p : checkPoints) {
-                sum += k.findNearest(p.getAzimuth(), p.getInclination(), 5).hashCode();
+                sum += k.findNearest(p.getLongitude(), p.getLatitude(), 5).hashCode();
             }
         }
         System.out.println("Sum " + sum + " Time " + (System.nanoTime() - start) / (100 * checkPoints.size()) + " for 5 matches.");
@@ -33,7 +33,7 @@ public class KDTreeSphericalTest {
         long sum = 0;
         for (int i = 0; i < 100; i++) {
             for (Point<Void> p : checkPoints) {
-                sum += k.findNearest(p.getAzimuth(), p.getInclination()).getAzimuth();
+                sum += k.findNearest(p.getLongitude(), p.getLatitude()).getLongitude();
             }
         }
         System.out.println("Sum " + sum + " Time " + (System.nanoTime() - start) / (100 * checkPoints.size()));
@@ -45,7 +45,7 @@ public class KDTreeSphericalTest {
         List<Point<Void>> checkPoints = generateRandomPoints(10000);
         KDTreeSpherical<Void> k = new KDTreeSpherical<Void>(datasetPoints, 180);
         for (Point<Void> p : checkPoints) {
-            confirm(p.getAzimuth(), p.getInclination(), k.findNearest(p.getAzimuth(), p.getInclination()), datasetPoints, Integer.MAX_VALUE);
+            confirm(p.getLongitude(), p.getLatitude(), k.findNearest(p.getLongitude(), p.getLatitude()), datasetPoints, Integer.MAX_VALUE);
         }
     }
 
@@ -54,25 +54,25 @@ public class KDTreeSphericalTest {
         List<Point<Void>> datasetPoints = generateRandomPoints(300);
         KDTreeSpherical<Void> k = new KDTreeSpherical<Void>(datasetPoints, 0);
         for (Point<Void> p : datasetPoints) {
-            Assert.assertTrue("Point " + p + " doesn't resolve to itself but " + k.findNearest(p.getAzimuth(), p.getInclination()),
-                    k.findNearest(p.getAzimuth(), p.getInclination()) == p);
-            confirm(p.getAzimuth(), p.getInclination(), k.findNearest(p.getAzimuth(), p.getInclination()), datasetPoints, 0);
+            Assert.assertTrue("Point " + p + " doesn't resolve to itself but " + k.findNearest(p.getLongitude(), p.getLatitude()),
+                    k.findNearest(p.getLongitude(), p.getLatitude()) == p);
+            confirm(p.getLongitude(), p.getLatitude(), k.findNearest(p.getLongitude(), p.getLatitude()), datasetPoints, 0);
         }
     }
 
     private void confirm(double x, double y, Point<Void> calculatedPoint, List<Point<Void>> datasetPoints, double maxDistance) {
         Point<Void> minPoint = getClosest(x, y, datasetPoints, maxDistance);
         if (calculatedPoint != null) {
-            double dy = (calculatedPoint.getInclination() - y) / 57.29578;
-            double dx = (calculatedPoint.getAzimuth() - x) / 57.29578;
-            double a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(calculatedPoint.getInclination() / 57.29578) * Math.cos(y / 57.29578)
+            double dy = (calculatedPoint.getLatitude() - y) / 57.29578;
+            double dx = (calculatedPoint.getLongitude() - x) / 57.29578;
+            double a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(calculatedPoint.getLatitude() / 57.29578) * Math.cos(y / 57.29578)
                     * Math.pow(Math.sin(dx / 2), 2);
             double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             double dist = c;
             double calculatedDist = dist * dist;
-            dy = (minPoint.getInclination() - y) / 57.29578;
-            dx = (minPoint.getAzimuth() - x) / 57.29578;
-            a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(calculatedPoint.getInclination() / 57.29578) * Math.cos(y / 57.29578) * Math.pow(Math.sin(dx / 2), 2);
+            dy = (minPoint.getLatitude() - y) / 57.29578;
+            dx = (minPoint.getLongitude() - x) / 57.29578;
+            a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(calculatedPoint.getLatitude() / 57.29578) * Math.cos(y / 57.29578) * Math.pow(Math.sin(dx / 2), 2);
             c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             dist = c;
             double minDist = dist * dist;
@@ -97,9 +97,9 @@ public class KDTreeSphericalTest {
         Point<Void> minPoint = null;
         for (Point<Void> p : datasetPoints) {
             // Check by comparing great circle distance.
-            double dy = (p.getInclination() - y) / 57.29578;
-            double dx = (p.getAzimuth() - x) / 57.29578;
-            double a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(p.getInclination() / 57.29578) * Math.cos(y / 57.29578) * Math.pow(Math.sin(dx / 2), 2);
+            double dy = (p.getLatitude() - y) / 57.29578;
+            double dx = (p.getLongitude() - x) / 57.29578;
+            double a = Math.pow(Math.sin(dy / 2), 2) + Math.cos(p.getLatitude() / 57.29578) * Math.cos(y / 57.29578) * Math.pow(Math.sin(dx / 2), 2);
             double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
             double dist = c;
             if (minDist >= dist) {

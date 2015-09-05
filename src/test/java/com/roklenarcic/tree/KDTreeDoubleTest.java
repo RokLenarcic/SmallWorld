@@ -80,7 +80,7 @@ public class KDTreeDoubleTest {
         List<Point<Void>> datasetPoints = generateRandomPoints(300, 100000);
         KDTreeDouble<Void> k = new KDTreeDouble<Void>(datasetPoints, 0, 0, 100000, 100000);
         for (Point<Void> p : datasetPoints) {
-            Assert.assertTrue("Point " + p + "doesn't resolve to itself", k.findNearest(p.getX(), p.getY(), 0) == p);
+            Assert.assertTrue("Point X=" + p.getX() + " Y=" + p.getX() + " doesn't resolve to itself", k.findNearest(p.getX(), p.getY(), 0) == p);
             confirm(p.getX(), p.getY(), k.findNearest(p.getX(), p.getY(), 0), datasetPoints, 0);
         }
     }
@@ -120,10 +120,10 @@ public class KDTreeDoubleTest {
             dx = minPoint.getX() - x;
             dy = minPoint.getY() - y;
             double minDist = dx * dx + dy * dy;
-            Assert.assertTrue("Point " + calculatedPoint + " is not closest(" + calculatedDist + "), " + minPoint + "(" + minDist + ") is for coordinate " + x
-                    + " " + y, minDist == calculatedDist);
+            Assert.assertTrue("Point X=" + calculatedPoint.getX() + " Y=" + calculatedPoint.getX() + " is not closest(" + calculatedDist + "), " + minPoint
+                    + "(" + minDist + ") is for coordinate " + x + " " + y, minDist == calculatedDist);
         } else {
-            Assert.assertTrue("Point is null should be " + minPoint, minPoint == null);
+            Assert.assertTrue("Point null should be null but is X=" + minPoint.getX() + " Y=" + minPoint.getX(), minPoint == null);
         }
     }
 

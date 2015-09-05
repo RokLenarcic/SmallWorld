@@ -4,7 +4,7 @@
 
   <groupId>com.github.roklenarcic</groupId>
   <artifactId>small-world</artifactId>
-  <version>1.0</version>
+  <version>1.1</version>
   <packaging>jar</packaging>
   <name>SmallWorld</name>
   <description>A library for finding nearest neighbour in a small dataset</description>
