@@ -60,7 +60,7 @@ It might also be slower on platforms with slow floating point operations or 32-b
 
 ## KDTreeSpherical
 
-This variant of the tree is created specifically for geographical data. It uses a 3-D tree which models the world as a sphere, projecting longitude and latitude onto the sphere. This solves problems with wrapping in 2 dimensions and with distance distortion of projecting a sphere onto a 2-D plane, which is present in 2-D trees.
+KDTreeSpherical is created specifically for geographical data. It uses a 3-D tree which models the world as a sphere, projecting longitude and latitude onto the sphere. This solves problems with wrapping in 2 dimensions and with distance distortion of projecting a sphere onto a 2-D plane.
 
 The cost of better accuracy and wrapping is that it's slower by about 50%. The azimuth value should be between [-180,180] and inclination should be [-90,90].
 
@@ -69,4 +69,4 @@ The cost of better accuracy and wrapping is that it's slower by about 50%. The a
 Fast enough. Single-threaded micro benchmark on Core i5 with 40k random points shows that 2-D trees need 400-500 (`int`) 500-600 (`double`) nanoseconds per lookup, 15% slower if using wrapping.
 3-D spherical tree needs 1100-1200 nanoseconds per lookup.
 
-Asking for multiple matches will slow things down significantly, asking for 5 nearest matches doubles the time required, asking for 10 nearest triples the time. This functionality was designed with fairly low number of matches in mind, if you need 100+ nearest points, let me know.
+Asking for multiple matches will slow things down significantly, asking for 5 nearest matches doubles the time required, asking for 10 nearest triples the time. This functionality was designed with fairly low number of matches in mind.
